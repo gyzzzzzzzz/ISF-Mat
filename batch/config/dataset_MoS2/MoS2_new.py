@@ -1,0 +1,127 @@
+# dataset settings
+custom_imports = dict(
+    imports=['mmseg2dmat.datasets.mat2d'],  # 包含您数据集类的模块路径
+    allow_failed_imports=False
+)
+num_batch = 5  # [1,2,3,4]
+classes_name = ['background', 'Thin-Layer','mono-layer']
+dataset_type = '2dmat-Mat2dDataset'
+crop_size = (768,768)
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='mmseg.datasets.transforms.LoadAnnotations'),
+    #dict(type='NEWTransform'),
+
+    dict(
+        type='RandomResize',
+        scale=(2560, 1536),
+        ratio_range=(0.5, 2.0),
+        keep_ratio=True),
+
+    dict(type='mmseg.datasets.transforms.transforms.RandomCrop', crop_size=crop_size, cat_max_ratio=1.0),
+    dict(type='RandomFlip', prob=[1 / 3, 1 / 3], direction=['horizontal', 'vertical']),
+    dict(type='mmseg.datasets.transforms.transforms.PhotoMetricDistortion',
+         brightness_delta=16,
+         contrast_range=(0.75, 1.25),
+         saturation_range=(0.75, 1.25),
+         hue_delta=9),
+    dict(type='mmseg.datasets.transforms.formatting.PackSegInputs')
+]
+test_pipeline = [
+    
+
+    dict(type='LoadImageFromFile'),
+    dict(type='mmseg.datasets.transforms.LoadAnnotations', reduce_zero_label=None),
+    dict(type='mmseg.datasets.transforms.formatting.PackSegInputs')
+]
+img_ratios = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]
+tta_pipeline = [
+    dict(type='LoadImageFromFile', backend_args=None),
+    dict(
+        type='TestTimeAug',
+        transforms=[
+            [
+                dict(type='Resize', scale_factor=r, keep_ratio=True)
+                for r in img_ratios
+            ],
+            [
+                dict(type='RandomFlip', prob=0., direction='horizontal'),
+                dict(type='RandomFlip', prob=1., direction='horizontal')
+            ], [dict(type='LoadAnnotations')], [dict(type='PackSegInputs')]
+        ])
+]
+data_root = '/home/guyizhan/datasets/fscil_data/Graphene/'   
+train_dataset = dict(type=dataset_type, data_root=data_root, pipeline=train_pipeline,
+                     data_prefix=dict(img_path='NewFolder/train2024', seg_map_path='NewFolder/annotations_semseg/train2024'),
+                     img_suffix='.jpg', seg_map_suffix='.png', reduce_zero_label=None,
+                     classes_name=classes_name)
+train_dst_noaug = dict(type=dataset_type, data_root=data_root, pipeline=test_pipeline,
+                     data_prefix=dict(img_path='NewFolder/train2024', seg_map_path='NewFolder/annotations_semseg/train2024'),
+                     img_suffix='.jpg', seg_map_suffix='.png', reduce_zero_label=None,
+                     classes_name=classes_name)
+val_dataset = dict(type=dataset_type, data_root=data_root, pipeline=test_pipeline,
+                   data_prefix=dict(img_path='val2024', seg_map_path='annotations_semseg/val2024'),
+                   img_suffix='.jpg', seg_map_suffix='.png', reduce_zero_label=None,
+                   classes_name=classes_name)
+train_dataloader = dict(
+    batch_size=2,
+    num_workers=4,
+    persistent_workers=True,
+    #sampler=dict(type='InfiniteSampler', shuffle=True),
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    dataset=train_dataset,
+    drop_last=True
+)
+
+val_dataloader = dict(
+    batch_size=1,
+    #num_batch_per_epoch=5,
+
+    num_workers=4,
+    persistent_workers=True,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=val_dataset,
+    drop_last=True
+)
+train_noaug_dataloader = dict(
+    batch_size=2,
+    num_workers=4,
+    persistent_workers=True,
+    #sampler=dict(type='InfiniteSampler', shuffle=True),
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    dataset=train_dst_noaug,
+    drop_last=True
+)
+test_dataloader = val_dataloader
+
+# val_evaluator = [
+#     dict(type='ext-RegionIoU', thresholds=[0.5, 0.75], skip_class_num=[0], area_filter=100, processes=2),
+#     dict(type='ext-RegionIoU', thresholds=[0.5, 0.75], skip_class_num=[0], area_filter=1000,
+#          prefix='103', processes=2),
+#     dict(type='ext-RegionIoU', thresholds=[0.5, 0.75], skip_class_num=[0], area_filter=10000,
+#          prefix='104', processes=2),
+#     dict(type='ext-RegionIoU', thresholds=[0.5, 0.75], skip_class_num=[0], area_filter=100000,
+#          prefix='105', processes=2),
+#     # dict(type='ext-IoUDICMetric'),
+#     # dict(type='ext-ConfusionMatrixMetric'),
+#     dict(type='IoUMetric', iou_metrics=['mIoU', 'mDice', 'mFscore']),
+# ]
+val_evaluator = [
+    dict(type='ext-RegionIoU', thresholds=[0.5, 0.75], skip_class_num=[0,255], area_filter=100),
+    # dict(type='ext-IoUDICMetric'),
+    # dict(type='ext-ConfusionMatrixMetric'),
+    dict(type='IoUMetric', iou_metrics=['mIoU', 'mDice', 'mFscore']),
+]
+test_evaluator = val_evaluator
+
+del crop_size
+del num_batch
+del dataset_type
+del classes_name
+del train_pipeline
+del train_dataset
+del val_dataset
+# from pprint import pprint
+#
+# pprint(train_dataloader)
+# pprint(val_dataloader)
