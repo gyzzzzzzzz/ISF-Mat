@@ -6,16 +6,16 @@ Due to the large size of the dataset, it has been uploaded to Hugging Face using
 
 
 Installation
-Step 1: Install MMSegmentation
+# Step 1: Install MMSegmentation
 Follow the official MMSegmentation installation guide. We strongly recommend reading the MMSegmentation documentation for detailed usage.
 
 
-Step 2: Clone this repository
+# Step 2: Clone this repository
 git clone https://github.com/gyzzzzzzzz/ISF-Mat.git
 cd ISF-Mat
 
 
-Step 3: Install custom extensions
+# Step 3: Install custom extensions
 # Install mmseg-extension (if used)
 git clone https://github.com/chenller/mmseg-extension.git
 cd mmseg-extension
